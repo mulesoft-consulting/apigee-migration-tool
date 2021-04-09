@@ -1,24 +1,16 @@
 #!/bin/bash
 
-#========================================================================================================================
-#
-#  Information
-#  Name           : exportApigeeProxies.sh
-#  Description	  : Automated export of Apigee proxies
-#  Author(s)      : dejim.juang@mulesoft.com
-#
-# Arguments
-#	$1 -> username	       : Apigee Username
-#	$2 -> password	       : Apigee Password
-#	$3 -> orgName          : Apigee Organization name
-#   $4 -> quiet            : Optional flag for quiet mode, 0 for normal, 1 for quiet
-#
-#	Usage						: ./exportApigeeProxies.sh <username> <password> <orgName> [quiet]
-#
-# Dependencies
+#########################################################################################################
+#                                                                                                       #
+#  author: Dejim Juang (dejim.juang@mulesoft.com)    		                                            #
+#  description: Download all proxies from Apigee										                #
+#  version: 1.0.0 (09/04/2021)                                                                          #
+#  licence: GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)  #
+#																										#
+#  dependencies
 #	* Download JQ		: https://stedolan.github.io/jq/
-#
-#========================================================================================================================
+#                                                                                                       #
+#########################################################################################################
 
 ### VARIABLES
 DEBUG_MODE=1
