@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="adc76397-f7fb-424b-b167-bf544f58afc8" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	
+	<configuration-properties doc:name="Configuration properties" doc:id="ca881835-7561-411e-b6ca-eca8d95a2fd6" file="mule.properties" />
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="c9776027-0fc4-44eb-904f-d38770a86579">
+	</ee:object-store-caching-strategy>
+	
+	<http:request-config name="HTTP_Request_Anypoint" doc:name="HTTP Request configuration" doc:id="86422cfb-8163-4718-9a69-4f036076405b" enableCookies="false">
+		<http:request-connection protocol="HTTPS" host="anypoint.mulesoft.com" port="443">
+			<tls:context >
+				<tls:trust-store insecure="true" />
+				<tls:key-store type="jks" path="keystore.jks" keyPassword="${tls.password}" password="${tls.password}" />
+			</tls:context>
+		</http:request-connection>
+	</http:request-config>
+
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="96157f1c-b527-4a3c-b957-e37109494ec2" entryTtl="10" maxEntries="1" expirationInterval="10" expirationIntervalUnit="SECONDS"/>
+	
+	<http:request-config name="HTTP_Request_Portal" doc:name="HTTP Request configuration" doc:id="a5463b51-fc16-40e4-831c-ab11129be5fb" >
+		<http:request-connection protocol="HTTPS" host="#[p('portal.url')]" port="443" />
+	</http:request-config>
+	<flow name="azure-apim-acm-sync-toolFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
+		<http:listener doc:name="/migrate" doc:id="c931b0e4-3c72-445e-8d85-510432147755" config-ref="HTTP_Listener_config" path="/migrate" />
+		<flow-ref doc:name="Flow Reference" doc:id="f41052c0-ae57-4c5a-aba3-0a5d8a24d179" name="get_access_token"/>
+		<file:list doc:name="List - /tmp/[org_name]" doc:id="fa9247ed-e487-4bc1-8ddd-78a471bfeb3a" directoryPath="/tmp/dejimj-eval"/>
+		<foreach doc:name="For Each [api_name]" doc:id="ecf0bb38-5354-4f61-b473-00867d331e83" >
+			<set-variable value="#[output application/json --- { api_name: attributes.fileName }]" doc:name="Set Variable - api_name" doc:id="6dba8191-80e6-40a9-90e1-02da0f99eb59" variableName="api_name"/>
+			<file:list doc:name="/tmp/[org_name]/[api_name]" doc:id="8862d8dd-6ded-4df3-a84e-ce93110c0a24" directoryPath='#[attributes.path ++ "/apiproxy"]'/>
+			<foreach doc:name="For Each [api_name]" doc:id="e9b22c50-530f-48fa-8a81-4aa29f364aad" >
+				<choice doc:name="Choice" doc:id="c5abdfb8-db26-44d4-a96f-64d410523f8a" >
+					<when expression="#[attributes.directory == true]">
+						<file:list doc:name="List" doc:id="135e97da-b504-46d3-8a9b-20d1e27f35d5" directoryPath="#[attributes.path]"/>
+						<foreach doc:name="For Each" doc:id="1638e28f-2b97-409f-b6a0-b0b3ce952c24" >
+							<set-variable value="#[output application/json --- payload]" doc:name="fileData" doc:id="7a1466d8-7914-4c56-bc71-cc0b3a0b7e6a" variableName="fileData"/>
+							<set-variable value="#[output application/json --- vars.api_name ++ vars.fileData]" doc:name="Set Variable" doc:id="74aa27d5-5bde-435e-a727-4a236e827c25" variableName="api_name"/>
+						</foreach>
+					</when>
+					<otherwise >
+						<set-variable value="#[output application/json --- payload]" doc:name="fileData" doc:id="a77b11f8-64f6-4de3-a0f4-ac69dac20b71" variableName="fileData"/>
+						<set-variable value="#[output application/json --- { version: payload.APIProxy.@revision }]" doc:name="version" doc:id="be0b5cd5-761c-4cca-8704-795a6407ebde" variableName="version"/>
+						<set-variable value="#[output application/json --- vars.fileData ++ vars.api_name ++ vars.version]" doc:name="Set Variable" doc:id="821d967e-c0b7-41d9-9a0a-56a6cb730e4c" variableName="api_name"/>
+					</otherwise>
+				</choice>
+				<logger level="INFO" doc:name="Logger" doc:id="d785956d-b339-41a9-9c1a-95577d66a5c2" />
+			</foreach>
+			<flow-ref doc:name="Flow Reference" doc:id="627ce926-65f6-4cbd-a6f0-e0e83a007acc" name="create-anypoint-exchange-asset" />
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="5124b0f0-b5ff-4a06-9ab4-8923ec2488e8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="get_access_token" doc:id="0d0c90c5-4a17-4110-8b5a-5f2cc80d6a87" >
+		<os:retrieve doc:name="Retrieve access_token" doc:id="89debbbd-f2e8-4d5a-a777-7517caf3384f" key="token" objectStore="Object_store" target="access_token" targetValue="#[payload.^raw]">
+			<os:default-value><![CDATA[#[1]]]></os:default-value>
+		</os:retrieve>
+		<os:retrieve doc:name="Retrieve org_id" doc:id="7cc0be6a-340a-44ed-8bba-dd8f632f7cb7" key="org_id" target="org_id" objectStore="Object_store" targetValue="#[payload.^raw]">
+			<os:default-value><![CDATA[#[1]]]></os:default-value>
+		</os:retrieve>
+		<choice doc:name="Choice" doc:id="81cfcf81-cd26-4815-9b54-1b657c9cfd6a">
+			<when expression="#[vars.access_token == 1]">
+				<http:request method="POST" doc:name="Anypoint - Get Access Token" doc:id="25bb696d-4638-4c6f-9862-5fe0ae05f38a" config-ref="HTTP_Request_Anypoint" path="/accounts/login" target="access_token" targetValue="#[payload.access_token]">
+			<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"username": p('anypoint.username'),
+	"password": p('anypoint.password')
+}]]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+		</http:request>
+				<os:store doc:name="Store access_token" doc:id="a067c6d5-9ea8-4cf5-997c-6927d56265ab" key="token" objectStore="Object_store" failOnNullValue="false">
+				<os:value><![CDATA[#[%dw 2.0
+output text/plain
+---
+vars.access_token]]]></os:value>
+			</os:store>
+					<http:request method="GET" doc:name="Anypoint - Get Org ID" doc:id="2933bf0d-990a-4dae-86a4-c9f3d3f5f1df" config-ref="HTTP_Request_Anypoint" path="/accounts/api/me" target="org_id" targetValue="#[payload.user.organizationId]">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.access_token
+}]]]></http:headers>
+		</http:request>
+					<os:store doc:name="Store org_id" doc:id="c1da3be3-1d44-4957-8573-c24b30e04a11" key="org_id" failOnNullValue="false" objectStore="Object_store">
+						<os:value><![CDATA[#[%dw 2.0
+output text/plain
+---
+vars.org_id]]]></os:value>
+					</os:store>
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="Logger" doc:id="f742013a-5ed4-4e6b-97eb-62cee47c1cfe" message="#[vars.access_token]" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="create-anypoint-exchange-asset" doc:id="886b59b1-8c41-4c59-91b2-cffe4e487d1e" >
+		<ee:transform doc:name="Transform Message" doc:id="d078f40c-8fb9-4093-a801-010ba73ead82">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import * from dw::core::Binaries
+output multipart/form-data
+---
+{
+	parts: {
+		organizationId: {
+			headers : {
+            },
+            content: vars.org_id
+		},
+		groupId: {
+			headers : {
+            },
+            content: vars.org_id
+		},
+		name: {
+			headers : {
+            },
+            content: vars.api_name.APIProxy.DisplayName
+		},
+		assetId: {
+			headers : {
+            },
+            content: (vars.api_name.api_name default "") ++ "-apigee"
+		},
+		version: {
+			headers : {
+            },
+            content: "1" ++ ".0.0"
+		},
+		classifier: {
+			headers : {
+            },
+            content: "http"
+		},
+		apiVersion: {
+			headers : {
+            },
+            content: "v" ++ (vars.api_name.version default "1")
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="62c00da7-c7e2-481b-a45e-afa685fd4fbb" />
+		<http:request method="POST" doc:name="Anypoint - Add Assets to Exchange" doc:id="653072e5-9beb-456b-8f99-e9cca6135cc9" config-ref="HTTP_Request_Anypoint" path="/exchange/api/v1/assets" target="assetInfo">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.access_token
+}]]]></http:headers>
+		</http:request>
+		<http:request method="PUT" doc:name="Anypoint - Add Tags" doc:id="a4fa0c44-3211-46d9-95b4-8cf0e2828386" config-ref="HTTP_Request_Anypoint" path='#["/exchange/api/v1/organizations/" ++ vars.org_id ++ "/assets/" ++ vars.org_id ++ "/" ++ vars.assetInfo.assetId ++ "/" ++ vars.assetInfo.version ++ "/tags"]'>
+				<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+[{"value":"apigee"}]]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.access_token,
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+			</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="45760f30-82d7-4125-b47c-e5d96d148900" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.assetInfo]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
