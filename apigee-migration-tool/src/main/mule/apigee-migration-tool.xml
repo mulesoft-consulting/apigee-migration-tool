@@ -31,7 +31,7 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 	<http:request-config name="HTTP_Request_Portal" doc:name="HTTP Request configuration" doc:id="a5463b51-fc16-40e4-831c-ab11129be5fb" >
 		<http:request-connection protocol="HTTPS" host="#[p('portal.url')]" port="443" />
 	</http:request-config>
-	<flow name="apigee-export-proxiesFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
+	<flow name="apigee-migration-toolFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
 		<http:listener doc:name="/migrate" doc:id="c931b0e4-3c72-445e-8d85-510432147755" config-ref="HTTP_Listener_config" path="/migrate" />
 		<set-variable value="${env_id}" doc:name="env_id" doc:id="9366d598-e1ef-41d5-bbc9-81c67491892b" variableName="env_id"/>
 		<flow-ref doc:name="Get AP Access Token" doc:id="f41052c0-ae57-4c5a-aba3-0a5d8a24d179" name="get_access_token"/>
@@ -48,11 +48,14 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 							<set-variable value="#[output application/json --- vars.api_name ++ vars.fileData]" doc:name="Set Variable" doc:id="74aa27d5-5bde-435e-a727-4a236e827c25" variableName="api_name"/>
 						</foreach>
 					</when>
-					<otherwise >
-						<set-variable value="#[output application/json --- payload]" doc:name="fileData" doc:id="a77b11f8-64f6-4de3-a0f4-ac69dac20b71" variableName="fileData"/>
-						<set-variable value="#[output application/json --- { version: payload.APIProxy.@revision }]" doc:name="version" doc:id="be0b5cd5-761c-4cca-8704-795a6407ebde" variableName="version"/>
-						<set-variable value="#[output application/json --- { name: payload.APIProxy.@name }]" doc:name="name" doc:id="9c85aba1-ff8a-4080-b14f-1b66442b6919" variableName="name"/>
-						<set-variable value="#[output application/json --- vars.api_name ++ vars.fileData ++ vars.name ++ vars.version]" doc:name="Set Variable" doc:id="821d967e-c0b7-41d9-9a0a-56a6cb730e4c" variableName="api_name"/>
+					<when expression='#[attributes.fileName contains ".xml"]'>
+						<set-variable value="#[output application/json --- payload]" doc:name="fileData" doc:id="a77b11f8-64f6-4de3-a0f4-ac69dac20b71" variableName="fileData" />
+						<set-variable value="#[output application/json --- { version: payload.APIProxy.@revision }]" doc:name="version" doc:id="be0b5cd5-761c-4cca-8704-795a6407ebde" variableName="version" />
+						<set-variable value="#[output application/json --- { name: payload.APIProxy.@name }]" doc:name="name" doc:id="9c85aba1-ff8a-4080-b14f-1b66442b6919" variableName="name" />
+						<set-variable value="#[output application/json --- vars.api_name ++ vars.fileData ++ vars.name ++ vars.version]" doc:name="Set Variable" doc:id="821d967e-c0b7-41d9-9a0a-56a6cb730e4c" variableName="api_name" />
+					</when>
+					<otherwise>
+						<logger level="INFO" doc:name="Logger" doc:id="59a2ae18-bb5a-459a-a684-62b65b480d53" />
 					</otherwise>
 				</choice>
 			</foreach>

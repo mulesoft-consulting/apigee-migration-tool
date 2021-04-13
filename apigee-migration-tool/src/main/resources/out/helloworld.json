@@ -1,0 +1,122 @@
+{
+  "api_name": "helloworld",
+  "TargetEndpoint": {
+    "Description": null,
+    "FaultRules": null,
+    "PreFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "PostFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "Flows": null,
+    "HTTPTargetConnection": {
+      "Properties": null,
+      "URL": "http://mocktarget.apigee.net"
+    }
+  },
+  "APIProxy": {
+    "Basepaths": "/v0/hello",
+    "ConfigurationVersion": null,
+    "CreatedAt": "1617808005169",
+    "CreatedBy": "accounts_apigee_admin@google.com",
+    "Description": null,
+    "DisplayName": "helloworld",
+    "LastModifiedAt": "1617808005169",
+    "LastModifiedBy": "accounts_apigee_admin@google.com",
+    "ManifestVersion": "SHA-512:dfd2f93f4d23b4b2e86776fc8b9e695643ffa3fcc81c354dc53948ffeb0a97393ebd065b01bb79332c7f6250c89c2028091e23414689fc8fbe43ab596df16eeb:us-east-1",
+    "Policies": {
+      "Policy": "add-cors",
+      "Policy": "check-quota"
+    },
+    "ProxyEndpoints": {
+      "ProxyEndpoint": "default"
+    },
+    "Resources": null,
+    "Spec": null,
+    "TargetServers": null,
+    "TargetEndpoints": {
+      "TargetEndpoint": "default"
+    }
+  },
+  "name": "helloworld",
+  "version": "1",
+  "AssignMessage": {
+    "DisplayName": "Add CORS",
+    "FaultRules": null,
+    "Properties": null,
+    "Add": {
+      "Headers": {
+        "Header": "{request.header.origin}",
+        "Header": "origin, x-requested-with, accept",
+        "Header": "3628800",
+        "Header": "GET, PUT, POST, DELETE"
+      }
+    },
+    "IgnoreUnresolvedVariables": "true",
+    "AssignTo": null
+  },
+  "Quota": {
+    "DisplayName": "Check Quota",
+    "Properties": null,
+    "Allow": null,
+    "Interval": "1",
+    "Distributed": "false",
+    "Synchronous": "false",
+    "TimeUnit": "minute",
+    "StartTime": "2016-3-31 00:00:00",
+    "AsynchronousConfiguration": {
+      "SyncIntervalInSeconds": "20",
+      "SyncMessageCount": "5"
+    }
+  },
+  "ProxyEndpoint": {
+    "Description": null,
+    "FaultRules": null,
+    "PreFlow": {
+      "Request": {
+        "Step": {
+          "Name": "check-quota"
+        },
+        "Step": {
+          "Name": "add-cors",
+          "Condition": "request.verb == \"OPTIONS\""
+        }
+      },
+      "Response": null
+    },
+    "PostFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "Flows": null,
+    "HTTPProxyConnection": {
+      "BasePath": "/v0/hello",
+      "Properties": null,
+      "VirtualHost": "default",
+      "VirtualHost": "secure"
+    },
+    "RouteRule": {
+      "Condition": "request.verb == \"OPTIONS\""
+    },
+    "RouteRule": {
+      "TargetEndpoint": "default"
+    }
+  },
+  "Manifest": {
+    "Policies": {
+      "VersionInfo": null,
+      "VersionInfo": null
+    },
+    "ProxyEndpoints": {
+      "VersionInfo": null
+    },
+    "Resources": null,
+    "SharedFlows": null,
+    "TargetEndpoints": {
+      "VersionInfo": null
+    }
+  }
+}

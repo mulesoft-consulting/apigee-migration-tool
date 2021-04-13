@@ -1,0 +1,96 @@
+{
+  "api_name": "test-oauth",
+  "TargetEndpoint": {
+    "PreFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "Flows": null,
+    "PostFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "HTTPTargetConnection": {
+      "URL": "https://user-api-flow.us-e1.cloudhub.io/api/"
+    }
+  },
+  "OAuthV2": {
+    "DisplayName": "Verify OAuth v2.0 Access Token",
+    "Operation": "VerifyAccessToken"
+  },
+  "AssignMessage": {
+    "DisplayName": "Remove Header Authorization",
+    "Remove": {
+      "Headers": {
+        "Header": null
+      }
+    },
+    "IgnoreUnresolvedVariables": "true",
+    "AssignTo": null
+  },
+  "ProxyEndpoint": {
+    "PreFlow": {
+      "Request": {
+        "Step": {
+          "Name": "verify-oauth-v2-access-token"
+        },
+        "Step": {
+          "Name": "remove-header-authorization"
+        }
+      },
+      "Response": null
+    },
+    "Flows": null,
+    "PostFlow": {
+      "Request": null,
+      "Response": null
+    },
+    "HTTPProxyConnection": {
+      "BasePath": "/secure/",
+      "VirtualHost": "secure"
+    },
+    "RouteRule": {
+      "TargetEndpoint": "default"
+    }
+  },
+  "Manifest": {
+    "Policies": {
+      "VersionInfo": null,
+      "VersionInfo": null
+    },
+    "ProxyEndpoints": {
+      "VersionInfo": null
+    },
+    "Resources": null,
+    "SharedFlows": null,
+    "TargetEndpoints": {
+      "VersionInfo": null
+    }
+  },
+  "APIProxy": {
+    "Basepaths": "/",
+    "ConfigurationVersion": null,
+    "CreatedAt": "1617989598618",
+    "CreatedBy": "dejimj@gmail.com",
+    "Description": null,
+    "DisplayName": "test-oauth",
+    "LastModifiedAt": "1617989626201",
+    "LastModifiedBy": "dejimj@gmail.com",
+    "ManifestVersion": "SHA-512:bb90e94b09b7abb5131435fea8579e18aebd8420df509ebd38a1bb2158a81ba6c3ea1c8f16cae8812466e2e80d15afac980b6da5f223eff57eda431d0bc2dd00:us-east-1",
+    "Policies": {
+      "Policy": "remove-header-authorization",
+      "Policy": "verify-oauth-v2-access-token"
+    },
+    "ProxyEndpoints": {
+      "ProxyEndpoint": "default"
+    },
+    "Resources": null,
+    "Spec": null,
+    "TargetServers": null,
+    "TargetEndpoints": {
+      "TargetEndpoint": "default"
+    }
+  },
+  "name": "test-oauth",
+  "version": "1"
+}
