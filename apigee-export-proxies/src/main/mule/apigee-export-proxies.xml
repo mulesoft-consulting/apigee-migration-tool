@@ -33,9 +33,9 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 	</http:request-config>
 	<flow name="apigee-export-proxiesFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
 		<http:listener doc:name="/migrate" doc:id="c931b0e4-3c72-445e-8d85-510432147755" config-ref="HTTP_Listener_config" path="/migrate" />
-		<set-variable value="${env_id}" doc:name="Set Variable" doc:id="9366d598-e1ef-41d5-bbc9-81c67491892b" variableName="env_id"/>
-		<flow-ref doc:name="Flow Reference" doc:id="f41052c0-ae57-4c5a-aba3-0a5d8a24d179" name="get_access_token"/>
-		<file:list doc:name="List - /tmp/[org_name]" doc:id="fa9247ed-e487-4bc1-8ddd-78a471bfeb3a" directoryPath="/tmp/dejimj-eval"/>
+		<set-variable value="${env_id}" doc:name="env_id" doc:id="9366d598-e1ef-41d5-bbc9-81c67491892b" variableName="env_id"/>
+		<flow-ref doc:name="Get AP Access Token" doc:id="f41052c0-ae57-4c5a-aba3-0a5d8a24d179" name="get_access_token"/>
+		<file:list doc:name="List - /tmp/[org_name]" doc:id="fa9247ed-e487-4bc1-8ddd-78a471bfeb3a" directoryPath="${working_dir}/${apigee_org_name}"/>
 		<foreach doc:name="For Each [api_name]" doc:id="ecf0bb38-5354-4f61-b473-00867d331e83" >
 			<set-variable value="#[output application/json --- { api_name: attributes.fileName }]" doc:name="Set Variable - api_name" doc:id="6dba8191-80e6-40a9-90e1-02da0f99eb59" variableName="api_name"/>
 			<file:list doc:name="/tmp/[org_name]/[api_name]" doc:id="8862d8dd-6ded-4df3-a84e-ce93110c0a24" directoryPath='#[attributes.path ++ "/apiproxy"]'/>
