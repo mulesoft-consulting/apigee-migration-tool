@@ -31,8 +31,9 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 	<http:request-config name="HTTP_Request_Portal" doc:name="HTTP Request configuration" doc:id="a5463b51-fc16-40e4-831c-ab11129be5fb" >
 		<http:request-connection protocol="HTTPS" host="#[p('portal.url')]" port="443" />
 	</http:request-config>
-	<flow name="azure-apim-acm-sync-toolFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
+	<flow name="apigee-export-proxiesFlow" doc:id="8675cbb0-57c6-41bd-bebc-159ffccbf5e2" >
 		<http:listener doc:name="/migrate" doc:id="c931b0e4-3c72-445e-8d85-510432147755" config-ref="HTTP_Listener_config" path="/migrate" />
+		<set-variable value="${env_id}" doc:name="Set Variable" doc:id="9366d598-e1ef-41d5-bbc9-81c67491892b" variableName="env_id"/>
 		<flow-ref doc:name="Flow Reference" doc:id="f41052c0-ae57-4c5a-aba3-0a5d8a24d179" name="get_access_token"/>
 		<file:list doc:name="List - /tmp/[org_name]" doc:id="fa9247ed-e487-4bc1-8ddd-78a471bfeb3a" directoryPath="/tmp/dejimj-eval"/>
 		<foreach doc:name="For Each [api_name]" doc:id="ecf0bb38-5354-4f61-b473-00867d331e83" >
@@ -50,19 +51,23 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 					<otherwise >
 						<set-variable value="#[output application/json --- payload]" doc:name="fileData" doc:id="a77b11f8-64f6-4de3-a0f4-ac69dac20b71" variableName="fileData"/>
 						<set-variable value="#[output application/json --- { version: payload.APIProxy.@revision }]" doc:name="version" doc:id="be0b5cd5-761c-4cca-8704-795a6407ebde" variableName="version"/>
-						<set-variable value="#[output application/json --- vars.fileData ++ vars.api_name ++ vars.version]" doc:name="Set Variable" doc:id="821d967e-c0b7-41d9-9a0a-56a6cb730e4c" variableName="api_name"/>
+						<set-variable value="#[output application/json --- { name: payload.APIProxy.@name }]" doc:name="name" doc:id="9c85aba1-ff8a-4080-b14f-1b66442b6919" variableName="name"/>
+						<set-variable value="#[output application/json --- vars.api_name ++ vars.fileData ++ vars.name ++ vars.version]" doc:name="Set Variable" doc:id="821d967e-c0b7-41d9-9a0a-56a6cb730e4c" variableName="api_name"/>
 					</otherwise>
 				</choice>
-				<logger level="INFO" doc:name="Logger" doc:id="d785956d-b339-41a9-9c1a-95577d66a5c2" />
 			</foreach>
-			<flow-ref doc:name="Flow Reference" doc:id="627ce926-65f6-4cbd-a6f0-e0e83a007acc" name="create-anypoint-exchange-asset" />
+			<async doc:name="Async" doc:id="9e78845d-b8b5-45bc-9548-1272dc107bbf" >
+				<flow-ref doc:name="Flow Reference" doc:id="627ce926-65f6-4cbd-a6f0-e0e83a007acc" name="create-anypoint-exchange-asset" />
+			</async>
 		</foreach>
-		<ee:transform doc:name="Transform Message" doc:id="5124b0f0-b5ff-4a06-9ab4-8923ec2488e8" >
+		<ee:transform doc:name="Transform Message" doc:id="19288564-8d58-4cbb-a58b-01221a731088" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-payload]]></ee:set-payload>
+{
+	"Status": "Complete"
+}]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 	</flow>
@@ -141,7 +146,7 @@ output multipart/form-data
 		assetId: {
 			headers : {
             },
-            content: (vars.api_name.api_name default "") ++ "-apigee"
+            content: (vars.api_name.name default "") ++ "-apigee"
 		},
 		version: {
 			headers : {
@@ -162,7 +167,6 @@ output multipart/form-data
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="62c00da7-c7e2-481b-a45e-afa685fd4fbb" />
 		<http:request method="POST" doc:name="Anypoint - Add Assets to Exchange" doc:id="653072e5-9beb-456b-8f99-e9cca6135cc9" config-ref="HTTP_Request_Anypoint" path="/exchange/api/v1/assets" target="assetInfo">
 			<http:headers><![CDATA[#[output application/java
 ---
@@ -170,7 +174,7 @@ output multipart/form-data
 	"Authorization" : "Bearer " ++ vars.access_token
 }]]]></http:headers>
 		</http:request>
-		<http:request method="PUT" doc:name="Anypoint - Add Tags" doc:id="a4fa0c44-3211-46d9-95b4-8cf0e2828386" config-ref="HTTP_Request_Anypoint" path='#["/exchange/api/v1/organizations/" ++ vars.org_id ++ "/assets/" ++ vars.org_id ++ "/" ++ vars.assetInfo.assetId ++ "/" ++ vars.assetInfo.version ++ "/tags"]'>
+		<http:request method="PUT" doc:name="Anypoint - Add Tags" doc:id="a4fa0c44-3211-46d9-95b4-8cf0e2828386" config-ref="HTTP_Request_Anypoint" path='#["/exchange/api/v1/organizations/" ++ vars.org_id ++ "/assets/" ++ vars.org_id ++ "/" ++ vars.assetInfo.assetId ++ "/" ++ vars.assetInfo.version ++ "/tags"]' target="tags">
 				<http:body><![CDATA[#[%dw 2.0
 output application/json
 ---
@@ -182,12 +186,46 @@ output application/json
 	"Content-Type" : "application/json"
 }]]]></http:headers>
 			</http:request>
-		<ee:transform doc:name="Transform Message" doc:id="45760f30-82d7-4125-b47c-e5d96d148900" >
+		<http:request method="POST" doc:name="Anypoint - Add Asset to API Manager" doc:id="e641d678-27b0-4041-a109-176c98433a48" config-ref="HTTP_Request_Anypoint" path='#["/apimanager/api/v1/organizations/" ++ vars.org_id ++ "/environments/" ++ vars.env_id ++ "/apis"]'>
+			<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+   "endpoint":{
+      "deploymentType":"CH",
+      "isCloudHub":true,
+      "muleVersion4OrAbove":true,
+      "proxyUri":"http://0.0.0.0:8081/",
+      "proxyTemplate":{
+         "assetVersion":"2.0.2"
+      },
+      "referencesUserDomain":false,
+      "responseTimeout":null,
+      "type":"http",
+      "uri": vars.api_name.TargetEndpoint.HTTPTargetConnection.URL,
+      "validation":"NOT_APPLICABLE"
+   },
+   "providerId":null,
+   "instanceLabel": vars.assetInfo.name,
+   "spec":{
+      "assetId": vars.assetInfo.assetId,
+      "groupId": vars.assetInfo.groupId,
+      "version": vars.assetInfo.version
+   }
+}]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ vars.access_token,
+	"Content-Type" : "application/json"
+}]]]></http:headers>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="88da3b0c-f57a-4551-8e64-a2d51478c5df" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-vars.assetInfo]]></ee:set-payload>
+payload]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
 	</flow>
