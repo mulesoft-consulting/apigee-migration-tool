@@ -59,7 +59,7 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 					</otherwise>
 				</choice>
 			</foreach>
-			<file:write doc:name="Write" doc:id="91c720d9-a9c2-4f7a-8774-0c63f0939f61" path='#["/Users/dejim.juang/Workspaces/apigee-migration-tool/apigee-export-proxies/src/main/resources/out/" ++ vars.api_name.name ++ ".json"]'>
+			<file:write doc:name="Write" doc:id="91c720d9-a9c2-4f7a-8774-0c63f0939f61" path="#[Mule::p('app.home') ++ &quot;/src/main/resources/out/&quot; ++ vars.api_name.name ++ &quot;.json&quot;]">
 				<file:content ><![CDATA[#[vars.api_name]]]></file:content>
 			</file:write>
 			<async doc:name="Async" doc:id="9e78845d-b8b5-45bc-9548-1272dc107bbf" >
